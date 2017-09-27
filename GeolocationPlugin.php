@@ -195,9 +195,16 @@ class GeolocationPlugin extends Omeka_Plugin_AbstractPlugin
 
         // If we have filled out info for the geolocation, then submit to the db
         $geolocationPost = $post['geolocation'];
+
+        // Add a poor man's version of a delete option which is strangely missing from this plugin.
+        if ($location && !empty($geolocationPost) && $geolocationPost['address'] == "delete") {
+            $location->delete();
+            return;
+        }
+
         if (!empty($geolocationPost)
-            && $geolocationPost['latitude'] != ''
-            && $geolocationPost['longitude'] != ''
+            && $geolocationPost['latitude'] != '0'  && $geolocationPost['latitude'] != ''
+            && $geolocationPost['longitude'] != '0' && $geolocationPost['longitude'] != ''
         ) {
             if (!$location) {
                 $location = new Location;
@@ -256,8 +263,8 @@ class GeolocationPlugin extends Omeka_Plugin_AbstractPlugin
 
     public function hookPublicItemsSearch($args)
     {
-        $view = $args['view'];
-        echo $view->partial('map/advanced-search-partial.php');
+        //$view = $args['view'];
+        //echo $view->partial('map/advanced-search-partial.php');
     }
 
     public function hookItemsBrowseSql($args)
@@ -372,7 +379,7 @@ class GeolocationPlugin extends Omeka_Plugin_AbstractPlugin
 
     public function filterPublicNavigationMain($navArray)
     {
-        $navArray['Geolocation'] = array('label'=>__('Map'), 'uri'=>url('geolocation/map/browse'));
+        //$navArray['Geolocation'] = array('label'=>__('Map'), 'uri'=>url('geolocation/map/browse'));
         return $navArray;
     }
 
@@ -582,21 +589,33 @@ class GeolocationPlugin extends Omeka_Plugin_AbstractPlugin
                 $addr = html_escape($location['address']);
             } else {
                 $lng = $lat = $zoom = $addr = '';
+
+                // Provide a default address from the item's location information.
+                $address = metadata($item, array('Item Type Metadata', 'Address'), array('no_filter' => true));
+                if (!empty($address)) {
+                    $location = metadata($item, array('Item Type Metadata', 'Location'), array('no_filter' => true));
+                    if (substr($location, 0, 4) == "MDI,") {
+                        $location = substr($location, 4);
+                    }
+                    $state = metadata($item, array('Item Type Metadata', 'State'), array('no_filter' => true));
+                    $addr = "$address, $location, $state";
+                }
             }
         }
 
         $html .= '<div class="field">';
-        $html .=     '<div id="location_form" class="two columns alpha">';
+        $html .=     '<div id="location_form" class="one columns alpha">';
         $html .=         '<input type="hidden" name="geolocation[latitude]" value="' . $lat . '" />';
         $html .=         '<input type="hidden" name="geolocation[longitude]" value="' . $lng . '" />';
         $html .=         '<input type="hidden" name="geolocation[zoom_level]" value="' . $zoom . '" />';
         $html .=         '<input type="hidden" name="geolocation[map_type]" value="Google Maps v' . self::GOOGLE_MAPS_API_VERSION . '" />';
-        $html .=         '<label>' . html_escape($label) . '</label>';
+        $html .=         '<label>Enter a street address or lat/lon coordinates:</label>';
         $html .=     '</div>';
-        $html .=     '<div class="inputs five columns omega">';
+        $html .=     '<div class="inputs six omega">';
         $html .=          '<div class="input-block">';
-        $html .=            '<input type="text" name="geolocation[address]" id="geolocation_address" value="' . $addr . '" class="textinput"/>';
+        $html .=            '<input type="text" name="geolocation[address]" id="geolocation_address" value="' . $addr . '" class="textinput" style="width:540px"/>';
         $html .=            '<button type="button" style="float:none;" name="geolocation_find_location_by_address" id="geolocation_find_location_by_address">'.__('Find').'</button>';
+        $html .=          '<div style="margin-bottom:8px;">To remove item from map, type "delete" for the address and Save Changes</div>';
         $html .=          '</div>';
         $html .=     '</div>';
         $html .= '</div>';
