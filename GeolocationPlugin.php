@@ -590,15 +590,15 @@ class GeolocationPlugin extends Omeka_Plugin_AbstractPlugin
             } else {
                 $lng = $lat = $zoom = $addr = '';
 
-                // Provide a default address from the item's location information.
+                // Provide a default address from the item's place information.
                 $address = metadata($item, array('Item Type Metadata', 'Address'), array('no_filter' => true));
                 if (!empty($address)) {
-                    $location = metadata($item, array('Item Type Metadata', 'Location'), array('no_filter' => true));
-                    if (substr($location, 0, 4) == "MDI,") {
-                        $location = substr($location, 4);
+                    $place = metadata($item, array('Item Type Metadata', 'Place'), array('no_filter' => true));
+                    if (substr($place, 0, 4) == "MDI,") {
+                        $location = substr($place, 4);
                     }
                     $state = metadata($item, array('Item Type Metadata', 'State'), array('no_filter' => true));
-                    $addr = "$address, $location, $state";
+                    $addr = "$address, $place, $state";
                 }
             }
         }
